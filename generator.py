@@ -1,72 +1,62 @@
 import os
-import json
+import re
 from litellm import completion
-from typing import Dict
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load env vars
 load_dotenv()
-
-# Load Groq API key
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
     raise RuntimeError("Please set GROQ_API_KEY in your .env file")
 
-# Strip quotes if accidentally added
-GROQ_API_KEY = GROQ_API_KEY.strip('"').strip("'")
-
-PROMPT_TEMPLATE = '''
-You are an assistant that creates a complete frontend project for a website based on the user's description.
-Produce a JSON object where keys are relative file paths and values are the file contents as strings.
-The project should be a ready-to-run frontend (React with Tailwind, or simple HTML/CSS/JS if requested).
+PROMPT_TEMPLATE = """
+You are a frontend code generator. 
+Generate a complete {framework} project based on the description below.
 
 Rules:
-- Output must be valid JSON only. No commentary.
-- Keep files reasonable in size; avoid embedding large assets.
-- Ensure imports are included in JSX files.
+- Output only valid code blocks (no explanations).
+- Use proper file structure markers like:
+  --- filename ---
+  (code here)
+  --- end ---
 
-User request:
+User description:
 \"\"\"{user_prompt}\"\"\"
-'''
+"""
 
-def generate_project_from_prompt(user_prompt: str) -> Dict[str, str]:
+def generate_project_from_prompt(user_prompt: str, framework: str = "React + Tailwind") -> dict:
+    """
+    Generate frontend project code files from LLM response.
+    Returns: dict mapping filename -> file content
+    """
     print("[DEBUG] User prompt:", user_prompt)
 
-    prompt = PROMPT_TEMPLATE.format(user_prompt=user_prompt)
+    prompt = PROMPT_TEMPLATE.format(user_prompt=user_prompt, framework=framework)
 
-    print("[DEBUG] Calling Groq API...")
     response = completion(
-        model="groq/llama-3.1-8b-instant",  # ✅ use a Groq-supported model
+        model="groq/llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": "You are a helpful code generator that outputs only JSON mapping filenames to file contents."},
+            {"role": "system", "content": "You output only code in structured blocks."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
-        max_tokens=4000,
-        api_key=GROQ_API_KEY  # ✅ pass the API key
+        max_tokens=4000
     )
 
-    text = response['choices'][0]['message']['content']
-    print("[DEBUG] Raw response from Groq:", text[:500])  # first 500 chars
+    text = response["choices"][0]["message"]["content"]
+    print("[DEBUG] Raw response preview:", text[:400])
 
-    # Try to parse JSON
-    try:
-        project_json = json.loads(text)
-    except Exception:
-        start = text.find('{')
-        end = text.rfind('}')
-        if start == -1 or end == -1:
-            raise ValueError("[ERROR] Model did not return valid JSON. Raw output:\n" + text[:1000])
-        raw = text[start:end+1]
-        project_json = json.loads(raw)
+    # Extract code blocks with filename markers
+    files = {}
+    pattern = r"---\s*(.*?)\s*---\n(.*?)---\s*end\s*---"
+    matches = re.findall(pattern, text, re.DOTALL)
 
-    if not isinstance(project_json, dict):
-        raise ValueError('[ERROR] Expected JSON object mapping filenames to contents')
+    if not matches:
+        raise ValueError("No code blocks detected. Raw output:\n" + text[:500])
 
-    for k, v in list(project_json.items()):
-        if not isinstance(v, str):
-            project_json[k] = json.dumps(v)
+    for filename, content in matches:
+        files[filename.strip()] = content.strip()
 
-    print("[DEBUG] Files returned from generator:", list(project_json.keys()))
-    return project_json
+    print("[DEBUG] Files generated:", list(files.keys()))
+    return files
