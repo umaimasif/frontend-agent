@@ -127,25 +127,27 @@ def mock_generator(user_prompt: str, framework: str):
                 createRoot(document.getElementById('root')).render(<App />)
                 """
             ),
-            "src/App.jsx": dedent(
-                f"""
-                import React from 'react'
+           "src/App.jsx": dedent(
+             f"""
+             import React from 'react'
 
-                export default function App() {{
-                  return (
-                    <div className="app" style={{padding:24,fontFamily:'Arial'}}>
-                      <header style={{textAlign:'center'}}>
-                        <h1>Generated React + Tailwind-like App</h1>
-                        <p>{user_prompt}</p>
-                      </header>
-                      <main>
-                        <button onClick={{() => alert('Hello from generated app')}}>Click me</button>
-                      </main>
-                    </div>
-                  )
-                }}
-                """
-            ),
+           export default function App() {{
+            return (
+               <div className="app" style={{ padding: 24, fontFamily: 'Arial' }}>
+               <header style={{ textAlign: 'center' }}>
+               <h1>Generated React + Tailwind-like App</h1>
+               <p>{user_prompt}</p>
+              </header>
+             <main>
+               <button onClick={() => alert('Hello from generated app')}>Click me</button>
+             </main>
+               </div>
+        )
+        }}
+     """
+      ),
+
+           
             "src/styles.css": dedent(
                 """
                 body { margin:0; font-family: Arial, sans-serif; }
