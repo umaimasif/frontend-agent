@@ -236,7 +236,7 @@ with col1:
                 if preview_file.exists():
                     st.subheader("Live preview")
                     html_content = preview_file.read_text(encoding="utf-8")
-                    st.components.v1.html(html_content, height=600, scrolling=True, unsafe_allow_html=True)
+                    st.components.v1.html(html_content, height=600, scrolling=True)
                 else:
                     st.info("No preview available.")
         except Exception as e:
