@@ -68,7 +68,28 @@ def safe_extract_code_blocks(text: str):
 # ---------------------
 def mock_generator(user_prompt: str, framework: str):
     if "react" in framework.lower():
-        # React project files (for download)
+        # React App JSX code as plain string
+        app_jsx = """
+import React from 'react';
+
+export default function App() {
+  return (
+    <div className="app" style={{ padding: 24, fontFamily: 'Arial' }}>
+      <header style={{ textAlign: 'center' }}>
+        <h1>Generated React App</h1>
+        <p>PLACEHOLDER_PROMPT</p>
+      </header>
+      <main>
+        <button onClick={() => alert('Hello from generated app')}>Click me</button>
+      </main>
+    </div>
+  );
+}
+"""
+        # Replace the placeholder with the user's prompt
+        app_jsx = app_jsx.replace("PLACEHOLDER_PROMPT", user_prompt)
+
+        # Files dictionary
         files = {
             "package.json": dedent("""{
   "name": "generated-frontend",
@@ -95,24 +116,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
 createRoot(document.getElementById('root')).render(<App />);"""),
-            "src/App.jsx": dedent(f"""import React from 'react';
-export default function App() {{
-  return (
-    <div className="app" style={{ padding: 24, fontFamily: 'Arial' }}>
-      <header style={{ textAlign: 'center' }}>
-        <h1>Generated React + Tailwind-like App</h1>
-        <p>{user_prompt}</p>
-      </header>
-      <main>
-        <button onClick={() => alert('Hello from generated app')}>Click me</button>
-      </main>
-    </div>
-  )
-}}"""),
+            "src/App.jsx": app_jsx,
             "src/styles.css": dedent("""body { margin:0; font-family: Arial, sans-serif; } .app { max-width:960px; margin:24px auto; }"""),
         }
 
-        # Static fallback HTML for Streamlit preview
+        # Static preview HTML for Streamlit
         files["index_preview.html"] = dedent(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,28 +144,6 @@ button {{ padding: 8px 16px; }}
 </body>
 </html>""")
         return files
-
-    else:
-        # Static HTML fallback for non-React projects
-        return {
-            "index.html": dedent(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generated Page</title>
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<header><h1>Landing</h1></header>
-<main>
-<p>{user_prompt}</p>
-<button onclick="alert('Hello!')">Click me</button>
-</main>
-</body>
-</html>"""),
-            "styles.css": dedent("""body { font-family: Arial, sans-serif; margin: 0; padding: 20px; } header { background: #f4f4f4; padding: 20px; text-align: center; }"""),
-        }
 
 # ---------------------
 # LLM Generator
@@ -245,12 +231,14 @@ with col1:
                 for f in sorted([p.relative_to(project_folder) for p in project_folder.rglob('*') if p.is_file()]):
                     st.code(str(f), language="")
 
-                if (project_folder / "index.html").exists():
-                    st.subheader("Live preview (index.html)")
-                    html_content = (project_folder / "index.html").read_text(encoding="utf-8")
+                # Use preview HTML if React
+                preview_file = project_folder / "index_preview.html" if (project_folder / "index_preview.html").exists() else project_folder / "index.html"
+                if preview_file.exists():
+                    st.subheader("Live preview")
+                    html_content = preview_file.read_text(encoding="utf-8")
                     st.components.v1.html(html_content, height=600, scrolling=True, unsafe_allow_html=True)
                 else:
-                    st.info("No index.html to preview.")
+                    st.info("No preview available.")
         except Exception as e:
             st.error(f"Error during generation: {e}")
 
