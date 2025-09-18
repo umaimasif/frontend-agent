@@ -85,7 +85,7 @@ def mock_generator_from_settings(settings: dict, framework: str):
     """
     title = settings.get("title", "My Site")
     navbar = settings.get("navbar", True)
-    navbar_color = settings.get("navbar_color", "#5B2E0F")  # dark-brown hex fallback
+    navbar_color = settings.get("navbar_color", "#5B2E0F")
     sidebar = settings.get("sidebar", True)
     pages = settings.get("pages", ["Home"])
     footer = settings.get("footer", False)
@@ -93,6 +93,9 @@ def mock_generator_from_settings(settings: dict, framework: str):
     charts = settings.get("charts", False)
     theme = settings.get("theme", "light")
     custom_color = settings.get("custom_color", "#5B2E0F")
+    about = settings.get("about", False)
+    contact = settings.get("contact", False)
+
 
     files = {}
 
@@ -224,10 +227,76 @@ export default function {comp_name}() {{
 }}
 """
             extra = ""
+            
             if charts and p.lower() in ("analytics", "dashboard", "home"):
                 extra = "<div className='mt-4 p-4 border rounded'>[Chart placeholder — replace with real chart]</div>"
             page_js = page_js.replace("PLACEHOLDER_EXTRA", extra)
             page_files[f"src/pages/{comp_name}.jsx"] = dedent(page_js)
+
+            # import line for the page in App
+            imports += f"import {comp_name} from './pages/{comp_name}.jsx';\n"
+
+            # route entry
+            route_path = "/" if p.lower() == "home" else "/" + p.lower().replace(" ", "-")
+            route_code = '<Route path="' + route_path + '" element={' + '<' + comp_name + ' />' + '} />\n'
+            routes_code += route_code
+
+        # ------------------------------
+        # Extra pages: About, Contact, Login
+        # ------------------------------
+        if settings.get("about"):
+            imports += "import About from './pages/About.jsx';\n"
+            routes_code += '<Route path="/about" element={<About />} />\n'
+            page_files["src/pages/About.jsx"] = dedent("""\
+            import React from 'react';
+            export default function About() {
+              return (
+                <div>
+                  <h2 className="text-2xl font-semibold mb-4">About Us</h2>
+                  <p>Welcome to our website! This is the about page.</p>
+                </div>
+              );
+            }
+            """)
+
+        if settings.get("contact"):
+            imports += "import Contact from './pages/Contact.jsx';\n"
+            routes_code += '<Route path="/contact" element={<Contact />} />\n'
+            page_files["src/pages/Contact.jsx"] = dedent("""\
+            import React from 'react';
+            export default function Contact() {
+              return (
+                <div>
+                  <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
+                  <form className="flex flex-col space-y-4 max-w-md">
+                    <input type="text" placeholder="Your Name" className="p-2 border rounded" />
+                    <input type="email" placeholder="Your Email" className="p-2 border rounded" />
+                    <textarea placeholder="Message" className="p-2 border rounded"></textarea>
+                    <button className="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
+                  </form>
+                </div>
+              );
+            }
+            """)
+
+        if login:
+            imports += "import Login from './pages/Login.jsx';\n"
+            routes_code += '<Route path="/login" element={<Login />} />\n'
+            page_files["src/pages/Login.jsx"] = dedent("""\
+            import React from 'react';
+            export default function Login() {
+              return (
+                <div className="flex flex-col items-center p-6">
+                  <h2 className="text-2xl font-semibold mb-4">Login</h2>
+                  <form className="flex flex-col space-y-4 max-w-sm w-full">
+                    <input type="email" placeholder="Email" className="p-2 border rounded" />
+                    <input type="password" placeholder="Password" className="p-2 border rounded" />
+                    <button className="bg-green-500 text-white px-4 py-2 rounded">Login</button>
+                  </form>
+                </div>
+              );
+            }
+            """)
 
             # import line for the page in App
             imports += f"import {comp_name} from './pages/{comp_name}.jsx';\n"
@@ -561,6 +630,11 @@ with col1:
     st.write(st.session_state.qa_answers)
 
     # If generation triggered, build settings and call generator
+    # Collect inputs from user (always visible in sidebar or main app)
+    st.session_state.qa_answers["contact"] = st.checkbox("Include Contact Page?", value=False)
+    st.session_state.qa_answers["about"] = st.checkbox("Include About Page?", value=False)
+    st.session_state.qa_answers["login"] = st.checkbox("Include Login Page?", value=False)
+
     if st.session_state.get("generate_trigger"):
         st.info("Building site from your answers...")
         settings = {
@@ -574,14 +648,15 @@ with col1:
             "charts": st.session_state.qa_answers.get("charts", False),
             "theme": st.session_state.qa_answers.get("theme", "light"),
             "custom_color": st.session_state.qa_answers.get("custom_color", "#5B2E0F"),
+            "contact": st.session_state.qa_answers.get("contact", False),
+            "about": st.session_state.qa_answers.get("about", False),
         }
-        if st.session_state.qa_answers.get("contact"):
-            if "Contact" not in settings["pages"]:
-                settings["pages"].append("Contact")
-        if st.session_state.qa_answers.get("about"):
-            if "About" not in settings["pages"]:
-                settings["pages"].append("About")
-
+        if settings["contact"] and "Contact" not in settings["pages"]:
+           settings["pages"].append("Contact")
+        if settings["login"] and "Login" not in settings["pages"]:
+           settings["pages"].append("Login")
+        if settings["about"] and "About" not in settings["pages"]:
+           settings["pages"].append("About")
         framework = st.session_state.qa_answers.get("framework", "React + Tailwind")
 
         try:
