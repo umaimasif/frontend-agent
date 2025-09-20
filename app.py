@@ -265,45 +265,122 @@ export default function {comp_name}() {{
             pages_added.add("About")
 
         if settings.get("contact") and "Contact" not in pages_added:
-            imports += "import Contact from './pages/Contact.jsx';\n"
-            routes_code += '<Route path="/contact" element={<Contact />} />\n'
-            page_files["src/pages/Contact.jsx"] = dedent("""\
-            import React from 'react';
-            export default function Contact() {
-              return (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
-                  <form className="flex flex-col space-y-4 max-w-md">
-                    <input type="text" placeholder="Your Name" className="p-2 border rounded" />
-                    <input type="email" placeholder="Your Email" className="p-2 border rounded" />
-                    <textarea placeholder="Message" className="p-2 border rounded"></textarea>
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
-                  </form>
-                </div>
-              );
-            }
-            """)
-            pages_added.add("Contact")
+          imports += "import Contact from './pages/Contact.jsx';\n"
+          routes_code += '<Route path="/contact" element={<Contact />} />\n'
+          page_files["src/pages/Contact.jsx"] = dedent("""\
+    import React, { useState } from 'react';
+
+    export default function Contact() {
+      const [form, setForm] = useState({ name: "", email: "", message: "" });
+
+      const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        alert(`Message sent!\\nName: ${form.name}\\nEmail: ${form.email}\\nMessage: ${form.message}`);
+        setForm({ name: "", email: "", message: "" }); // reset
+      };
+
+      return (
+        <div className="flex flex-col items-center p-6">
+          <h2 className="text-2xl font-semibold mb-6">Contact Us</h2>
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col space-y-4 w-full max-w-md bg-white p-6 rounded-2xl shadow-lg"
+          >
+            <div>
+              <label className="block text-gray-700 mb-2">Your Name</label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="John Doe"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Your Email</label>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Message</label>
+              <textarea
+                name="message"
+                value={form.message}
+                onChange={handleChange}
+                placeholder="Write your message..."
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="4"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Send
+            </button>
+          </form>
+        </div>
+      );
+    }
+    """)
+          pages_added.add("Contact")
+
+           
 
         if login and "Login" not in pages_added:
-            imports += "import Login from './pages/Login.jsx';\n"
-            routes_code += '<Route path="/login" element={<Login />} />\n'
-            page_files["src/pages/Login.jsx"] = dedent("""\
-            import React from 'react';
-            export default function Login() {
-              return (
-                <div className="flex flex-col items-center p-6">
-                  <h2 className="text-2xl font-semibold mb-4">Login</h2>
-                  <form className="flex flex-col space-y-4 max-w-sm w-full">
-                    <input type="email" placeholder="Email" className="p-2 border rounded" />
-                    <input type="password" placeholder="Password" className="p-2 border rounded" />
-                    <button className="bg-green-500 text-white px-4 py-2 rounded">Login</button>
-                  </form>
-                </div>
-              );
-            }
-            """)
-            pages_added.add("Login")
+          imports += "import Login from './pages/Login.jsx';\n"
+          routes_code += '<Route path="/login" element={<Login />} />\n'
+          page_files["src/pages/Login.jsx"] = dedent("""\
+    import React from 'react';
+
+    export default function Login() {
+      return (
+        <div className="flex flex-col items-center p-6">
+          <h2 className="text-2xl font-semibold mb-6">Login</h2>
+          <form className="w-full max-w-sm bg-white p-6 rounded-2xl shadow-lg space-y-4">
+            <div>
+              <label className="block text-gray-700 mb-2">Email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                placeholder="Enter your password"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+            >
+              Login
+            </button>
+          </form>
+        </div>
+      );
+    }
+    """)
+          pages_added.add("Login")
+
 
            
 
