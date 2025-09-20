@@ -241,10 +241,14 @@ export default function {comp_name}() {{
             route_code = '<Route path="' + route_path + '" element={' + '<' + comp_name + ' />' + '} />\n'
             routes_code += route_code
 
+        # Track already-added pages
+        # ------------------------------
+        pages_added = set(pages)  # start with whatever user gave
+
         # ------------------------------
         # Extra pages: About, Contact, Login
         # ------------------------------
-        if settings.get("about"):
+        if settings.get("about") and "About" not in pages_added:
             imports += "import About from './pages/About.jsx';\n"
             routes_code += '<Route path="/about" element={<About />} />\n'
             page_files["src/pages/About.jsx"] = dedent("""\
@@ -258,8 +262,9 @@ export default function {comp_name}() {{
               );
             }
             """)
+            pages_added.add("About")
 
-        if settings.get("contact"):
+        if settings.get("contact") and "Contact" not in pages_added:
             imports += "import Contact from './pages/Contact.jsx';\n"
             routes_code += '<Route path="/contact" element={<Contact />} />\n'
             page_files["src/pages/Contact.jsx"] = dedent("""\
@@ -278,8 +283,9 @@ export default function {comp_name}() {{
               );
             }
             """)
+            pages_added.add("Contact")
 
-        if login:
+        if login and "Login" not in pages_added:
             imports += "import Login from './pages/Login.jsx';\n"
             routes_code += '<Route path="/login" element={<Login />} />\n'
             page_files["src/pages/Login.jsx"] = dedent("""\
@@ -297,15 +303,9 @@ export default function {comp_name}() {{
               );
             }
             """)
+            pages_added.add("Login")
 
-            # import line for the page in App
-            imports += f"import {comp_name} from './pages/{comp_name}.jsx';\n"
-
-            # route entry (constructed without f-string braces conflict)
-            route_path = "/" if p.lower() == "home" else "/" + p.lower().replace(" ", "-")
-            # Build JSX route string safely
-            route_code = '<Route path="' + route_path + '" element={' + '<' + comp_name + ' />' + '} />\n'
-            routes_code += route_code
+           
 
         # Sidebar
         if sidebar:
@@ -634,7 +634,10 @@ with col1:
     st.session_state.qa_answers["contact"] = st.checkbox("Include Contact Page?", value=False)
     st.session_state.qa_answers["about"] = st.checkbox("Include About Page?", value=False)
     st.session_state.qa_answers["login"] = st.checkbox("Include Login Page?", value=False)
-
+    pages = st.session_state.qa_answers.get("pages", [])
+    if not pages:
+       pages = ["Home"]
+    st.session_state.qa_answers["pages"] = pages
     if st.session_state.get("generate_trigger"):
         st.info("Building site from your answers...")
         settings = {
@@ -642,7 +645,7 @@ with col1:
             "navbar": st.session_state.qa_answers.get("navbar", True),
             "navbar_color": st.session_state.qa_answers.get("navbar_color", "#5B2E0F"),
             "sidebar": st.session_state.qa_answers.get("sidebar", True),
-            "pages": st.session_state.qa_answers.get("pages", ["Home"]),
+            "pages": pages,
             "footer": st.session_state.qa_answers.get("footer", False),
             "login": st.session_state.qa_answers.get("login", False),
             "charts": st.session_state.qa_answers.get("charts", False),
